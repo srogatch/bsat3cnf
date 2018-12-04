@@ -328,3 +328,6 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/Data/for2sat.txt
+/Data/output.txt
+/Data/CBS_k3_n100_m449_b50.tar.gz
