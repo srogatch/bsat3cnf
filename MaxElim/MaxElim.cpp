@@ -53,6 +53,26 @@ void CheckAndPrintSolution(const Problem& cur) {
 void Worker() {
   Problem cur;
   while (problems.Pop(cur)) {
+    //// CHECKING
+    for (int64_t i = 0; i < cur._cl3.size(); i++) {
+      for (int8_t j = 0; j < 3; j++) {
+        const int64_t var = cur._cl3[i]._vars[j];
+        const set<int64_t> &s = cur._vr3._vrs[var + cur._varVal.size() - 1];
+        if (s.find(i) == s.end()) {
+          fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
+        }
+      }
+    }
+    for (int64_t i = 0; i < cur._cl2.size(); i++) {
+      for (int8_t j = 0; j < 2; j++) {
+        const int64_t var = cur._cl2[i]._vars[j];
+        const set<int64_t> &s = cur._vr2._vrs[var + cur._varVal.size() - 1];
+        if (s.find(i) == s.end()) {
+          fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
+        }
+      }
+    }
+
     if (cur._nKnown == gnUsedVars) { // Solution found
       CheckAndPrintSolution(cur);
       continue; // should be unreachable
@@ -78,7 +98,9 @@ void Worker() {
         int8_t at = 0;
         for (int8_t k = 0; k < 3; k++) {
           if (k == j) continue;
+          const int64_t var = cur._cl3[i]._vars[k];
           left._cl2.back()._vars[at] = cur._cl3[i]._vars[k];
+          left._vr2.Add(var, left._cl2.size() - 1);
           at++;
         }
         left.RemoveClause3(i);
@@ -89,9 +111,19 @@ void Worker() {
 
         Problem right = cur;
         right.RemoveClause3(i);
-        if (right.ApplyVar(cur._cl3[i]._vars[j]) && right.EliminateSingleSigned()) {
-          totCl3 += right._cl3.size();
-          maybeRight = true;
+        if (right.ApplyVar(cur._cl3[i]._vars[j])) {
+          bool maybeSat = true;
+          for (int8_t k = 0; k < 3; k++) {
+            if (k == j) continue;
+            if (!right.ActSingleSigned(cur._cl3[i]._vars[k])) {
+              maybeSat = false;
+              break;
+            }
+          }
+          if(maybeSat) {
+            totCl3 += right._cl3.size();
+            maybeRight = true;
+          }
         }
         if ((maybeLeft || maybeRight) && totCl3 < bestTotCl3) {
           maybeBestLeft = maybeLeft;
@@ -196,6 +228,17 @@ int main()
   gInitial._cl3 = clauses;
   gInitial._cl2.clear();
   gInitial._nKnown = 0;
+  gInitial._vr3.Init(nVars);
+  for (int64_t i = 0; i < gInitial._cl3.size(); i++) {
+    for (int8_t j = 0; j < 3; j++) {
+      const int64_t var = gInitial._cl3[i]._vars[j];
+      if (var == 0) {
+        break;
+      }
+      gInitial._vr3.Add(var, i);
+    }
+  }
+  gInitial._vr2.Init(nVars);
 
   Problem normalized = gInitial;
   if (!normalized.NormalizeInput()) {
