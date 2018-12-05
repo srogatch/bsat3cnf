@@ -104,7 +104,7 @@ void Worker() {
           at++;
         }
         left.RemoveClause3(i);
-        if (left.EliminateSingleSigned()) {
+        if (left.ActSingleSigned(cur._cl3[i]._vars[j])) {
           totCl3 += left._cl3.size();
           maybeLeft = true;
         }
