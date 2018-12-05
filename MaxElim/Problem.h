@@ -58,7 +58,8 @@ struct Problem {
         }
       }
     }
-    std::vector<int64_t> toApply;
+    int64_t *pToApply = (int64_t *)_alloca(sizeof(int64_t) * (_varKnown.size() - _nKnown));
+    int64_t nToApply = 0;
     for (int64_t i = int64_t(_cl2.size()) - 1; i>=0; i--) {
       for (int8_t j = 0; j < 2; j++) {
         const int64_t signedCl2 = _cl2[i]._vars[j];
@@ -70,14 +71,15 @@ struct Problem {
             // this clause just evaluates to true
           }
           else {
-            toApply.emplace_back(signedOtherCl2);
+            pToApply[nToApply] = signedOtherCl2;
+            nToApply++;
           }
           break;
         }
       }
     }
-    for (int64_t i = 0; i < int64_t(toApply.size()); i++) {
-      if (!ApplyVar(toApply[i])) {
+    for (int64_t i = 0; i < nToApply; i++) {
+      if (!ApplyVar(pToApply[i])) {
         return false;
       }
     }
