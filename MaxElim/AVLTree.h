@@ -23,8 +23,9 @@ struct AVLNodePool {
     _nodes.emplace_back();
     return ans;
   }
-  void Release(const int64_t iNode) {
-    _nodes[iNode]._iLeft = _iSpare;
+
+  void Release(const int64_t iNode, FastVector<uint64_t> *pShadow) {
+    _nodes.Modify(iNode, pShadow)._iLeft = _iSpare;
     _iSpare = iNode;
   }
 };

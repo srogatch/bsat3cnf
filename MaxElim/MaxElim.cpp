@@ -3,6 +3,7 @@
 #include "Problem.h"
 #include "Solver2Sat.h"
 #include "Pipeline.h"
+#include "ShadowProblem.h"
 using namespace std;
 
 const char* const gcInpFn = "input.3cnf";
@@ -58,7 +59,7 @@ void Worker() {
       for (int64_t i = 0; i < int64_t(cur._cl3.size()); i++) {
         for (int8_t j = 0; j < 3; j++) {
           const int64_t var = cur._cl3[i]._vars[j];
-          if(!cur._vr3.Contains(var, i, cur._vrc)) {
+          if(!cur._vr3.Contains(var, i, cur)) {
             fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
           }
         }
@@ -66,7 +67,7 @@ void Worker() {
       for (int64_t i = 0; i < int64_t(cur._cl2.size()); i++) {
         for (int8_t j = 0; j < 2; j++) {
           const int64_t var = cur._cl2[i]._vars[j];
-          if (!cur._vr2.Contains(var, i, cur._vrc)) {
+          if (!cur._vr2.Contains(var, i, cur)) {
             fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
           }
         }
@@ -85,6 +86,12 @@ void Worker() {
       CheckAndPrintSolution(cur);
       continue; // should be unreachable
     }
+
+    Problem left = cur;
+    Problem right = cur;
+    ShadowProblem shadowLeft(cur, left);
+    ShadowProblem shadowRight(cur, right);
+
     Problem bestLeft, bestRight;
     bool maybeBestLeft = false, maybeBestRight = false;
     int64_t bestTotCl3 = (cur._cl3.size() + 1) * 2;
@@ -93,14 +100,24 @@ void Worker() {
         int64_t totCl3 = 0;
         bool maybeLeft = false;
         bool maybeRight = false;
-        Problem left = cur;
+        
+        shadowLeft.Restore();
+
+        //// DEBUG-PRINT
+        //for (int64_t m = 0; m < cur._vrc._avlNp._nodes.size(); m++) {
+        //  if (memcmp(&cur._vrc._avlNp._nodes[m], &left._vrc._avlNp._nodes[m], sizeof(AVLNode))) {
+        //    printf(" %lld ", m);
+        //  }
+        //}
+
         left._cl2.emplace_back();
         int8_t at = 0;
+        Clause2 &cl2back = left._cl2.ModifyBack(&shadowLeft._cl2);
         for (int8_t k = 0; k < 3; k++) {
           if (k == j) continue;
           const int64_t var = cur._cl3[i]._vars[k];
-          left._cl2.back()._vars[at] = cur._cl3[i]._vars[k];
-          left._vr2.Add(var, left._cl2.size() - 1, left._vrc);
+          cl2back._vars[at] = var;
+          left._vr2.Add(var, left._cl2.size() - 1, left);
           at++;
         }
         left.RemoveClause3(i);
@@ -109,7 +126,7 @@ void Worker() {
           maybeLeft = true;
         }
 
-        Problem right = cur;
+        shadowRight.Restore();
         right.RemoveClause3(i);
         if (right.ApplyVar(cur._cl3[i]._vars[j])) {
           bool maybeSat = true;
@@ -142,9 +159,11 @@ void Worker() {
       continue;
     }
     if (maybeBestLeft) {
+      bestLeft._pShadow = nullptr;
       problems.Push(bestLeft);
     }
     if (maybeBestRight) {
+      bestRight._pShadow = nullptr;
       problems.Push(bestRight);
     }
   }
@@ -198,11 +217,11 @@ int main()
           }
           clauses.emplace_back();
           for (int8_t i = 0; i < int8_t(curClause.size()); i++) {
-            clauses.back()._vars[i] = curClause[i];
+            clauses.ModifyBack(nullptr)._vars[i] = curClause[i];
             usedVar[abs(curClause[i])] = true;
           }
           for (int8_t i = int8_t(curClause.size()); i < 3; i++) {
-            clauses.back()._vars[i] = 0;
+            clauses.ModifyBack(nullptr)._vars[i] = 0;
           }
           curClause.clear();
           break;
@@ -232,7 +251,7 @@ int main()
   gInitial._cl3 = clauses;
   gInitial._nKnown = 0;
   gInitial._vrc.Init(nVars);
-  gInitial._vr3.Init(gInitial._vrc);
+  gInitial._vr3.Init(gInitial);
   for (int64_t i = 0; i < int64_t(gInitial._cl3.size()); i++) {
     for (int8_t j = 0; j < 3; j++) {
       const int64_t var = gInitial._cl3[i]._vars[j];
@@ -243,13 +262,13 @@ int main()
       //if (i == 533) {
       //  printf("");
       //}
-      gInitial._vr3.Add(var, i, gInitial._vrc);
-      if (!gInitial._vr3.Contains(var, i, gInitial._vrc)) {
+      gInitial._vr3.Add(var, i, gInitial);
+      if (!gInitial._vr3.Contains(var, i, gInitial)) {
         fprintf(stderr, "Failed to mark variable %lld in clause %lld\n", var, i);
       }
     }
   }
-  gInitial._vr2.Init(gInitial._vrc);
+  gInitial._vr2.Init(gInitial);
 
   Problem normalized = gInitial;
   if (!normalized.NormalizeInput()) {

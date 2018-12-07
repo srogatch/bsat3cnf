@@ -56,8 +56,6 @@ public:
     MemPool::Instance().Release(_pItems, _capBytes);
   }
 
-  T& operator[](const int64_t at) { return _pItems[at]; }
-  const T& operator[](const int64_t at) const { return _pItems[at]; }
 
   int64_t size() const { return _size; }
 
@@ -78,7 +76,37 @@ public:
     _size--;
   }
 
-  T& back() {
-    return _pItems[_size - 1];
+  const T& operator[](const int64_t at) const { return _pItems[at]; }
+
+  const T& back() const {
+    return (*this)[_size - 1];
+  }
+
+  void AssignZeros(const int64_t nItems) {
+    const int64_t newSizeBytes = nItems * sizeof(T);
+    if (newSizeBytes > _capBytes) {
+      const int64_t newCapBytes = MemPool::RoundUp((_capBytes + 1) + ((_capBytes + 1) >> 1));
+      MemPool::Instance().Release(_pItems, _capBytes);
+      _pItems = reinterpret_cast<T*>(MemPool::Instance().Acquire(newCapBytes));
+      _capBytes = newCapBytes;
+    }
+    _size = nItems;
+    memset(_pItems, 0, _size * sizeof(T));
+  }
+  void SetSize(const int64_t nItems) {
+    _size = nItems;
+  }
+
+  T& Modify(const int64_t at, FastVector<uint64_t> *pShadow) {
+    if (pShadow != nullptr) {
+      const int64_t iPack = at >> 6;
+      if (iPack < pShadow->size()) {
+        pShadow->Modify(iPack, nullptr) |= (1ull << (at & 63));
+      }
+    }
+    return _pItems[at];
+  }
+  T& ModifyBack(FastVector<uint64_t> *pShadow) {
+    return Modify(_size - 1, pShadow);
   }
 };
