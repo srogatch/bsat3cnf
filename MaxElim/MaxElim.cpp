@@ -13,11 +13,12 @@ int64_t gnUsedVars = -1;
 Problem gInitial;
 Pipeline<Problem> problems;
 mutex gmSolution;
+const bool gbSelfCheck = true;
 
 void CheckAndPrintSolution(const Problem& cur) {
   //// Check
   int64_t failureClause = -1;
-  for (int64_t i = 0; i < gInitial._cl3.size(); i++) {
+  for (int64_t i = 0; i < int64_t(gInitial._cl3.size()); i++) {
     bool satisfied = false;
     for (int8_t j = 0; j < 3; j++) {
       const int64_t signedVar = gInitial._cl3[i]._vars[j];
@@ -39,7 +40,7 @@ void CheckAndPrintSolution(const Problem& cur) {
   //// Print
   unique_lock<mutex> msl(gmSolution);
   FILE *fpout = fopen(gcOutFn, "wt");
-  for (int64_t i = 1; i < cur._varVal.size(); i++) {
+  for (int64_t i = 1; i < int64_t(cur._varVal.size()); i++) {
     fprintf(fpout, "%d ", cur._varVal[i] ? 1 : 0);
   }
   fprintf(fpout, "\n");
@@ -53,25 +54,24 @@ void CheckAndPrintSolution(const Problem& cur) {
 void Worker() {
   Problem cur;
   while (problems.Pop(cur)) {
-    //// CHECKING
-    //for (int64_t i = 0; i < cur._cl3.size(); i++) {
-    //  for (int8_t j = 0; j < 3; j++) {
-    //    const int64_t var = cur._cl3[i]._vars[j];
-    //    const unordered_set<int64_t> &s = cur._vr3._vrs[var + cur._varVal.size() - 1];
-    //    if (s.find(i) == s.end()) {
-    //      fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
-    //    }
-    //  }
-    //}
-    //for (int64_t i = 0; i < cur._cl2.size(); i++) {
-    //  for (int8_t j = 0; j < 2; j++) {
-    //    const int64_t var = cur._cl2[i]._vars[j];
-    //    const unordered_set<int64_t> &s = cur._vr2._vrs[var + cur._varVal.size() - 1];
-    //    if (s.find(i) == s.end()) {
-    //      fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
-    //    }
-    //  }
-    //}
+    if (gbSelfCheck) {
+      for (int64_t i = 0; i < int64_t(cur._cl3.size()); i++) {
+        for (int8_t j = 0; j < 3; j++) {
+          const int64_t var = cur._cl3[i]._vars[j];
+          if(!cur._vr3.Contains(var, i, cur._vrc)) {
+            fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
+          }
+        }
+      }
+      for (int64_t i = 0; i < int64_t(cur._cl2.size()); i++) {
+        for (int8_t j = 0; j < 2; j++) {
+          const int64_t var = cur._cl2[i]._vars[j];
+          if (!cur._vr2.Contains(var, i, cur._vrc)) {
+            fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
+          }
+        }
+      }
+    }
 
     if (cur._nKnown == gnUsedVars) { // Solution found
       CheckAndPrintSolution(cur);
@@ -88,7 +88,7 @@ void Worker() {
     Problem bestLeft, bestRight;
     bool maybeBestLeft = false, maybeBestRight = false;
     int64_t bestTotCl3 = (cur._cl3.size() + 1) * 2;
-    for (int64_t i = 0; i < cur._cl3.size(); i++) {
+    for (int64_t i = 0; i < int64_t(cur._cl3.size()); i++) {
       for (int8_t j = 0; j < 3; j++) {
         int64_t totCl3 = 0;
         bool maybeLeft = false;
@@ -100,7 +100,7 @@ void Worker() {
           if (k == j) continue;
           const int64_t var = cur._cl3[i]._vars[k];
           left._cl2.back()._vars[at] = cur._cl3[i]._vars[k];
-          left._vr2.Add(var, left._cl2.size() - 1);
+          left._vr2.Add(var, left._cl2.size() - 1, left._vrc);
           at++;
         }
         left.RemoveClause3(i);
@@ -138,7 +138,7 @@ void Worker() {
         }
       }
     }
-    if (bestTotCl3 >= (cur._cl3.size() + 1) * 2) { // Unsatisfiable
+    if (bestTotCl3 >= (int64_t(cur._cl3.size()) + 1) * 2) { // Unsatisfiable
       continue;
     }
     if (maybeBestLeft) {
@@ -207,11 +207,15 @@ int main()
           curClause.clear();
           break;
         }
+        if (abs(var) > nVars) {
+          fprintf(stderr, "Variable out of range: %lld\n", var);
+          quick_exit(9);
+        }
         curClause.emplace_back(var);
         pos += offs;
       }
     }
-    if (clauses.size() != nClauses) {
+    if (int64_t(clauses.size()) != nClauses) {
       fprintf(stderr, "Read %lld clauses instead of %lld\n", (int64_t)clauses.size(), (int64_t)nClauses);
       return 5;
     }
@@ -228,17 +232,25 @@ int main()
   gInitial._cl3 = clauses;
   gInitial._cl2.clear();
   gInitial._nKnown = 0;
-  gInitial._vr3.Init(nVars);
-  for (int64_t i = 0; i < gInitial._cl3.size(); i++) {
+  gInitial._vrc.Init(nVars);
+  gInitial._vr3.Init(gInitial._vrc);
+  for (int64_t i = 0; i < int64_t(gInitial._cl3.size()); i++) {
     for (int8_t j = 0; j < 3; j++) {
       const int64_t var = gInitial._cl3[i]._vars[j];
       if (var == 0) {
         break;
       }
-      gInitial._vr3.Add(var, i);
+      //printf("%lld %d %lld\n", i, (int)j, var); // DEBUG-PRINT
+      //if (i == 533) {
+      //  printf("");
+      //}
+      gInitial._vr3.Add(var, i, gInitial._vrc);
+      if (!gInitial._vr3.Contains(var, i, gInitial._vrc)) {
+        fprintf(stderr, "Failed to mark variable %lld in clause %lld\n", var, i);
+      }
     }
   }
-  gInitial._vr2.Init(nVars);
+  gInitial._vr2.Init(gInitial._vrc);
 
   Problem normalized = gInitial;
   if (!normalized.NormalizeInput()) {

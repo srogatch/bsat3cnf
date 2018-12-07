@@ -11,6 +11,7 @@ struct Problem {
   int64_t _nKnown;
   VarRef _vr3;
   VarRef _vr2;
+  VarRefCommon _vrc;
 
   static bool SignToBool(const int64_t var) {
     return var > 0;
@@ -18,15 +19,15 @@ struct Problem {
   void RemoveClause3(const int64_t at) {
     const int64_t iLast = _cl3.size() - 1;
     for (int8_t j = 0; j < 3; j++) {
-      _vr3.Del(_cl3[at]._vars[j], at);
+      _vr3.Del(_cl3[at]._vars[j], at, _vrc);
       if (at != iLast) {
-        _vr3.Del(_cl3[iLast]._vars[j], iLast);
+        _vr3.Del(_cl3[iLast]._vars[j], iLast, _vrc);
       }
     }
     if (at != iLast) {
       _cl3[at] = _cl3[iLast];
       for (int8_t j = 0; j < 3; j++) {
-        _vr3.Add(_cl3[at]._vars[j], at);
+        _vr3.Add(_cl3[at]._vars[j], at, _vrc);
       }
     }
     _cl3.pop_back();
@@ -34,15 +35,15 @@ struct Problem {
   void RemoveClause2(const int64_t at) {
     const int64_t iLast = _cl2.size() - 1;
     for (int8_t j = 0; j < 2; j++) {
-      _vr2.Del(_cl2[at]._vars[j], at);
+      _vr2.Del(_cl2[at]._vars[j], at, _vrc);
       if (at != iLast) {
-        _vr2.Del(_cl2[iLast]._vars[j], iLast);
+        _vr2.Del(_cl2[iLast]._vars[j], iLast, _vrc);
       }
     }
     if (at != iLast) {
       _cl2[at] = _cl2.back();
       for (int8_t j = 0; j < 2; j++) {
-        _vr2.Add(_cl2[at]._vars[j], at);
+        _vr2.Add(_cl2[at]._vars[j], at, _vrc);
       }
     }
     _cl2.pop_back();
@@ -62,7 +63,7 @@ struct Problem {
     _nKnown++;
     
     std::vector<int64_t> toEss;
-    std::vector<int64_t> clauses = _vr3.Clauses(signedVar);
+    std::vector<int64_t> clauses = _vr3.Clauses(signedVar, _vrc);
     for (const int64_t i : clauses) {
       int8_t j = 0;
       for (; j < 3; j++) {
@@ -83,7 +84,7 @@ struct Problem {
       }
     }
 
-    clauses = _vr3.Clauses(-signedVar);
+    clauses = _vr3.Clauses(-signedVar, _vrc);
     for (const int64_t i : clauses) {
       int8_t j = 0;
       for (; j < 3; j++) {
@@ -100,14 +101,14 @@ struct Problem {
       _cl2.emplace_back();
       for (int8_t k = 0; k < 3; k++) {
         if (k == j) continue;
-        _vr2.Add(_cl2.back()._vars[at] = _cl3[i]._vars[k], _cl2.size() - 1);
+        _vr2.Add(_cl2.back()._vars[at] = _cl3[i]._vars[k], _cl2.size() - 1, _vrc);
         at++;
       }
       RemoveClause3(i);
     }
 
     std::vector<int64_t> toApply;
-    clauses = _vr2.Clauses(signedVar);
+    clauses = _vr2.Clauses(signedVar, _vrc);
     for (const int64_t i : clauses) {
       int8_t j = 0;
       for (; j < 2; j++) {
@@ -125,7 +126,7 @@ struct Problem {
       toEss.emplace_back(signedOtherCl2);
     }
 
-    clauses = _vr2.Clauses(-signedVar);
+    clauses = _vr2.Clauses(-signedVar, _vrc);
     for (const int64_t i : clauses) {
       int8_t j = 0;
       for (; j < 2; j++) {
@@ -158,8 +159,8 @@ struct Problem {
   // Returns |false| if the problem is unsatisfiable.
   // Returns |true| if the problem may be satisfiable.
   bool ActSingleSigned(const int64_t var) {
-    const bool straight = (_vr2.Size(var) + _vr3.Size(var)) > 0;
-    const bool inverse = (_vr2.Size(-var) + _vr3.Size(-var)) > 0;
+    const bool straight = (_vr2.Size(var, _vrc) + _vr3.Size(var, _vrc)) > 0;
+    const bool inverse = (_vr2.Size(-var, _vrc) + _vr3.Size(-var, _vrc)) > 0;
     if (straight) {
       if (!inverse) {
         return ApplyVar(var);
@@ -176,7 +177,7 @@ struct Problem {
   // Returns |false| if the problem is unsatisfiable.
   // Returns |true| if the problem may be satisfiable.
   bool EliminateSingleSigned() {
-    for (int64_t i = 1; i < _varVal.size(); i++) {
+    for (int64_t i = 1; i < int64_t(_varVal.size()); i++) {
       if (_varKnown[i]) {
         continue;
       }
@@ -218,9 +219,9 @@ struct Problem {
         _cl2.emplace_back();
         const int64_t iLast = _cl2.size() - 1;
         int64_t var = _cl2[iLast]._vars[0] = _cl3[i]._vars[0];
-        _vr2.Add(var, iLast);
+        _vr2.Add(var, iLast, _vrc);
         var = _cl2[iLast]._vars[1] = _cl3[i]._vars[1];
-        _vr2.Add(var, iLast);
+        _vr2.Add(var, iLast, _vrc);
         RemoveClause3(i);
         break;
       }
