@@ -4,6 +4,9 @@
 
 #include "targetver.h"
 
+#include <immintrin.h>
+#include <intrin.h>
+
 #include <cassert>
 #include <condition_variable>
 #include <cstdio>
@@ -15,5 +18,3 @@
 #include <queue>
 #include <stack>
 #include <string>
-#include <vector>
-#include <unordered_set>

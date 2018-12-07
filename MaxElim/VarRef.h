@@ -11,7 +11,7 @@ struct VarRefCommon {
 };
 
 struct VarRef {
-  std::vector<AVLTree> _trees;
+  FastVector<AVLTree> _trees;
 
 private:
   VarRefCommon *_pVrc;
@@ -282,7 +282,11 @@ private:
 
 public:
   void Init(const VarRefCommon& vrc) {
-    _trees.resize(2 * vrc._N + 1);
+    for (int64_t i = 0; i < 2 * vrc._N + 1; i++) {
+      _trees.emplace_back();
+      _trees.back()._iRoot = -1;
+      _trees.back()._size = 0;
+    }
   }
 
   void Add(const int64_t var, const int64_t iClause, VarRefCommon &vrc) {

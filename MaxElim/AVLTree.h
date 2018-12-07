@@ -1,5 +1,7 @@
 #pragma once
 
+#include "FastVector.h"
+
 struct AVLNode {
   int64_t _key;
   int64_t _iLeft;
@@ -8,7 +10,7 @@ struct AVLNode {
 };
 
 struct AVLNodePool {
-  std::vector<AVLNode> _nodes;
+  FastVector<AVLNode> _nodes;
   int64_t _iSpare = -1;
 
   int64_t Acquire() {
@@ -28,6 +30,6 @@ struct AVLNodePool {
 };
 
 struct AVLTree {
-  int64_t _iRoot = -1;
-  int64_t _size = 0;
+  int64_t _iRoot;
+  int64_t _size;
 };

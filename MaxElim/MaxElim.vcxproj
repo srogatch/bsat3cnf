@@ -158,6 +158,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AVLTree.h" />
+    <ClInclude Include="FastVector.h" />
+    <ClInclude Include="Helper.h" />
+    <ClInclude Include="MemPool.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="Problem.h" />
     <ClInclude Include="RawClause.h" />
@@ -168,6 +171,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MaxElim.cpp" />
+    <ClCompile Include="MemPool.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

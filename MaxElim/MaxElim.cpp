@@ -153,7 +153,7 @@ void Worker() {
 int main()
 {
   int64_t nVars = -1, nClauses = -1;
-  vector<Clause3> clauses;
+  FastVector<Clause3> clauses;
   {
     vector<bool> usedVar;
     ifstream ifs(gcInpFn, ifstream::in);
@@ -230,7 +230,6 @@ int main()
   gInitial._varKnown.resize(nVars + 1, false);
   gInitial._varVal.resize(nVars + 1);
   gInitial._cl3 = clauses;
-  gInitial._cl2.clear();
   gInitial._nKnown = 0;
   gInitial._vrc.Init(nVars);
   gInitial._vr3.Init(gInitial._vrc);

@@ -4,8 +4,8 @@
 #include "VarRef.h"
 
 struct Problem {
-  std::vector<Clause3> _cl3;
-  std::vector<Clause2> _cl2;
+  FastVector<Clause3> _cl3;
+  FastVector<Clause2> _cl2;
   std::vector<bool> _varVal;
   std::vector<bool> _varKnown;
   int64_t _nKnown;
