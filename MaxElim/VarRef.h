@@ -1,7 +1,7 @@
 #pragma once
 
 struct VarRef {
-  std::vector<std::set<int64_t>> _vrs;
+  std::vector<std::unordered_set<int64_t>> _vrs;
   int64_t _N;
 
   void Init(const int64_t N) {
@@ -21,7 +21,8 @@ struct VarRef {
     return _vrs[_N + var].size();
   }
   std::vector<int64_t> Clauses(const int64_t var) {
-    std::vector<int64_t> ans(_vrs[_N + var].rbegin(), _vrs[_N + var].rend());
+    std::vector<int64_t> ans(_vrs[_N + var].begin(), _vrs[_N + var].end());
+    std::sort(ans.begin(), ans.end(), std::greater<int64_t>());
     return std::move(ans);
   }
 };

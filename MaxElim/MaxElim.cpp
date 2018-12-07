@@ -54,24 +54,24 @@ void Worker() {
   Problem cur;
   while (problems.Pop(cur)) {
     //// CHECKING
-    for (int64_t i = 0; i < cur._cl3.size(); i++) {
-      for (int8_t j = 0; j < 3; j++) {
-        const int64_t var = cur._cl3[i]._vars[j];
-        const set<int64_t> &s = cur._vr3._vrs[var + cur._varVal.size() - 1];
-        if (s.find(i) == s.end()) {
-          fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
-        }
-      }
-    }
-    for (int64_t i = 0; i < cur._cl2.size(); i++) {
-      for (int8_t j = 0; j < 2; j++) {
-        const int64_t var = cur._cl2[i]._vars[j];
-        const set<int64_t> &s = cur._vr2._vrs[var + cur._varVal.size() - 1];
-        if (s.find(i) == s.end()) {
-          fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
-        }
-      }
-    }
+    //for (int64_t i = 0; i < cur._cl3.size(); i++) {
+    //  for (int8_t j = 0; j < 3; j++) {
+    //    const int64_t var = cur._cl3[i]._vars[j];
+    //    const unordered_set<int64_t> &s = cur._vr3._vrs[var + cur._varVal.size() - 1];
+    //    if (s.find(i) == s.end()) {
+    //      fprintf(stderr, "Checking failed for variable %lld in 3-clause %lld.\n", var, i);
+    //    }
+    //  }
+    //}
+    //for (int64_t i = 0; i < cur._cl2.size(); i++) {
+    //  for (int8_t j = 0; j < 2; j++) {
+    //    const int64_t var = cur._cl2[i]._vars[j];
+    //    const unordered_set<int64_t> &s = cur._vr2._vrs[var + cur._varVal.size() - 1];
+    //    if (s.find(i) == s.end()) {
+    //      fprintf(stderr, "Checking failed for variable %lld in 2-clause %lld.\n", var, i);
+    //    }
+    //  }
+    //}
 
     if (cur._nKnown == gnUsedVars) { // Solution found
       CheckAndPrintSolution(cur);

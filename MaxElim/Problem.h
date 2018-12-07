@@ -70,10 +70,10 @@ struct Problem {
           break;
         }
       }
-      if (j >= 3) {
-        fprintf(stderr, "Inconsistency for var %lld at 3-clause %lld.\n", signedVar, i);
-        continue;
-      }
+      //if (j >= 3) {
+      //  fprintf(stderr, "Inconsistency for var %lld at 3-clause %lld.\n", signedVar, i);
+      //  continue;
+      //}
       // evaluates to |true|
       Clause3 cl = _cl3[i];
       RemoveClause3(i);
@@ -91,10 +91,10 @@ struct Problem {
           break;
         }
       }
-      if (j >= 3) {
-        fprintf(stderr, "Inconsistency for var %lld at 3-clause %lld.\n", -signedVar, i);
-        continue;
-      }
+      //if (j >= 3) {
+      //  fprintf(stderr, "Inconsistency for var %lld at 3-clause %lld.\n", -signedVar, i);
+      //  continue;
+      //}
       // Transform into 2-clause
       int8_t at = 0;
       _cl2.emplace_back();
@@ -115,10 +115,10 @@ struct Problem {
           break;
         }
       }
-      if (j >= 2) {
-        fprintf(stderr, "Inconsistency for var %lld at 2-clause %lld.\n", signedVar, i);
-        continue;
-      }
+      //if (j >= 2) {
+      //  fprintf(stderr, "Inconsistency for var %lld at 2-clause %lld.\n", signedVar, i);
+      //  continue;
+      //}
       const int64_t signedOtherCl2 = _cl2[i]._vars[j ^ 1];
       RemoveClause2(i);
       // this clause just evaluates to true
@@ -133,10 +133,10 @@ struct Problem {
           break;
         }
       }
-      if (j >= 2) {
-        fprintf(stderr, "Inconsistency for var %lld at 2-clause %lld.\n", -signedVar, i);
-        continue;
-      }
+      //if (j >= 2) {
+      //  fprintf(stderr, "Inconsistency for var %lld at 2-clause %lld.\n", -signedVar, i);
+      //  continue;
+      //}
       const int64_t signedOtherCl2 = _cl2[i]._vars[j ^ 1];
       RemoveClause2(i);
       toApply.emplace_back(signedOtherCl2);
