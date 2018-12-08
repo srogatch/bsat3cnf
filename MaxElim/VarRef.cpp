@@ -141,7 +141,8 @@ template<int8_t taClauseSz> void VarRef<taClauseSz>::traverse(const int64_t iPar
     return;
   }
   traverse(getNode(iParent)._iRight);
-  _pTraversed->push_back(getNode(iParent)._key);
+  _pTraversed->emplace_back();
+  _pTraversed->UnshadowedModifyBack() = getNode(iParent)._key;
   traverse(getNode(iParent)._iLeft);
 }
 
@@ -301,12 +302,12 @@ template<int8_t taClauseSz> int64_t VarRef<taClauseSz>::Size(const int64_t var, 
   return _trees[prob._vrc._N + var]._size;
 }
 
-template<int8_t taClauseSz> std::vector<int64_t> VarRef<taClauseSz>::Clauses(const int64_t var, Problem& prob) {
-  std::vector<int64_t> ans;
+template<int8_t taClauseSz> FastVector<int64_t> VarRef<taClauseSz>::Clauses(const int64_t var, Problem& prob) {
+  FastVector<int64_t> ans;
   _pTraversed = &ans;
   _pProb = &prob;
   const int64_t iTree = prob._vrc._N + var;
-  ans.reserve(_trees[iTree]._size);
+  //ans.reserve(_trees[iTree]._size);
   traverse(_trees[iTree]._iRoot);
   _pTraversed = nullptr;
   _pProb = nullptr;

@@ -219,11 +219,11 @@ int main()
           }
           clauses.emplace_back();
           for (int8_t i = 0; i < int8_t(curClause.size()); i++) {
-            clauses.ModifyBack(nullptr)._vars[i] = curClause[i];
+            clauses.UnshadowedModifyBack()._vars[i] = curClause[i];
             usedVar[abs(curClause[i])] = true;
           }
           for (int8_t i = int8_t(curClause.size()); i < 3; i++) {
-            clauses.ModifyBack(nullptr)._vars[i] = 0;
+            clauses.UnshadowedModifyBack()._vars[i] = 0;
           }
           curClause.clear();
           break;

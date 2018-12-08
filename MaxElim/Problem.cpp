@@ -79,8 +79,9 @@ bool Problem::ApplyVar(const int64_t signedVar) {
   _nKnown++;
 
   FastVector<int64_t> toEss;
-  std::vector<int64_t> clauses = _vr3.Clauses(signedVar, *this);
-  for (const int64_t i : clauses) {
+  FastVector<int64_t> clauses = _vr3.Clauses(signedVar, *this);
+  for (int64_t m = 0; m < clauses.size(); m++) {
+    const int64_t i = clauses[m];
     int8_t j = 0;
     for (; j < 3; j++) {
       if (_cl3[i]._vars[j] == signedVar) {
@@ -97,12 +98,13 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     for (int8_t k = 0; k < 3; k++) {
       if (k == j) continue;
       toEss.emplace_back();
-      toEss.ModifyBack(nullptr) = cl._vars[k];
+      toEss.UnshadowedModifyBack() = cl._vars[k];
     }
   }
 
   clauses = _vr3.Clauses(-signedVar, *this);
-  for (const int64_t i : clauses) {
+  for (int64_t m = 0; m < clauses.size(); m++) {
+    const int64_t i = clauses[m];
     int8_t j = 0;
     for (; j < 3; j++) {
       if (_cl3[i]._vars[j] == -signedVar) {
@@ -126,7 +128,8 @@ bool Problem::ApplyVar(const int64_t signedVar) {
   }
 
   clauses = _vr2.Clauses(signedVar, *this);
-  for (const int64_t i : clauses) {
+  for (int64_t m = 0; m < clauses.size(); m++) {
+    const int64_t i = clauses[m];
     int8_t j = 0;
     for (; j < 2; j++) {
       if (_cl2[i]._vars[j] == signedVar) {
@@ -141,12 +144,13 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     RemoveClause2(i);
     // this clause just evaluates to true
     toEss.emplace_back();
-    toEss.ModifyBack(nullptr) = signedOtherCl2;
+    toEss.UnshadowedModifyBack() = signedOtherCl2;
   }
 
   clauses = _vr2.Clauses(-signedVar, *this);
   FastVector<int64_t> toApply;
-  for (const int64_t i : clauses) {
+  for (int64_t m = 0; m < clauses.size(); m++) {
+    const int64_t i = clauses[m];
     int8_t j = 0;
     for (; j < 2; j++) {
       if (_cl2[i]._vars[j] == -signedVar) {
@@ -160,7 +164,7 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     const int64_t signedOtherCl2 = _cl2[i]._vars[j ^ 1];
     RemoveClause2(i);
     toApply.emplace_back();
-    toApply.ModifyBack(nullptr) = signedOtherCl2;
+    toApply.UnshadowedModifyBack() = signedOtherCl2;
   }
 
   for (int64_t i = 0; i < toEss.size(); i++) {

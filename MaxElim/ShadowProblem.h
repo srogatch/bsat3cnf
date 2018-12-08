@@ -66,7 +66,7 @@ struct ShadowProblem {
                   if (index >= orig.size()) {
                     goto depleted;
                   }
-                  mod.Modify(index, nullptr) = orig[index];
+                  mod.UnshadowedModify(index) = orig[index];
                 }
               }
             }
@@ -76,7 +76,7 @@ struct ShadowProblem {
                 goto depleted;
               }
               const int64_t nItems = std::min<int64_t>(16, orig.size() - index);
-              Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], nItems * sizeof(T));
+              Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
             }
           }
         }
@@ -87,12 +87,12 @@ struct ShadowProblem {
           goto depleted;
         }
         const int64_t nItems = std::min<int64_t>(64, orig.size() - index);
-        Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], nItems * sizeof(T));
+        Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
       }  
     }
   depleted:
     mod.SetSize(orig.size());
-    memset(&dirty.Modify(0, nullptr), 0, dirty.size() * sizeof(uint64_t));
+    memset(&dirty.UnshadowedModify(0), 0, dirty.size() * sizeof(uint64_t));
     //printf(" %lld ", totBpc); //DEBUG-PRINT
   }
 

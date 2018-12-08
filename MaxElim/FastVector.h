@@ -101,12 +101,19 @@ public:
     if (pShadow != nullptr) {
       const int64_t iPack = at >> 6;
       if (iPack < pShadow->size()) {
-        pShadow->Modify(iPack, nullptr) |= (1ull << (at & 63));
+        pShadow->UnshadowedModify(iPack) |= (1ull << (at & 63));
       }
     }
-    return _pItems[at];
+    return UnshadowedModify(at);
   }
   T& ModifyBack(FastVector<uint64_t> *pShadow) {
     return Modify(_size - 1, pShadow);
+  }
+
+  T& UnshadowedModify(const int64_t at) {
+    return _pItems[at];
+  }
+  T& UnshadowedModifyBack() {
+    return UnshadowedModify(_size - 1);
   }
 };

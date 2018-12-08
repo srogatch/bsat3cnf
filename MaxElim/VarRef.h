@@ -19,7 +19,7 @@ template<int8_t taClauseSz> struct VarRef {
 private:
   Problem *_pProb = nullptr;
   int64_t _var;
-  std::vector<int64_t> *_pTraversed;
+  FastVector<int64_t> *_pTraversed;
 
 private:
   AVLNode & getNode(const int64_t iNode);
@@ -73,7 +73,7 @@ public:
 
   int64_t Size(const int64_t var, const Problem &prob) const;
 
-  std::vector<int64_t> Clauses(const int64_t var, Problem &prob);
+  FastVector<int64_t> Clauses(const int64_t var, Problem &prob);
 
   bool Contains(const int64_t var, const int64_t iClause, Problem &prob);
 };
