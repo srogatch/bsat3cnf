@@ -37,32 +37,45 @@ struct ShadowProblem {
       if (!cur64) {
         continue;
       }
-      //// Note: these are byte-order dependent (little endian)
-      for (int8_t i32 = 0; i32 < 2; i32++) {
-        const uint32_t cur32 = reinterpret_cast<const uint32_t*>(&cur64)[i32];
-        if (!cur32) {
-          continue;
-        }
-        for (int8_t i16 = 0; i16 < 2; i16++) {
-          const uint16_t cur16 = reinterpret_cast<const uint16_t*>(&cur32)[i16];
-          if (!cur16) {
+      if (_mm_popcnt_u64(cur64) <= 16) {
+        //// Note: these are byte-order dependent (little endian)
+        for (int8_t i32 = 0; i32 < 2; i32++) {
+          const uint32_t cur32 = reinterpret_cast<const uint32_t*>(&cur64)[i32];
+          if (!cur32) {
             continue;
           }
-          for (int8_t i8 = 0; i8 < 2; i8++) {
-            const uint8_t cur8 = reinterpret_cast<const uint8_t*>(&cur16)[i8];
-            if (!cur8) {
+          for (int8_t i16 = 0; i16 < 2; i16++) {
+            const uint16_t cur16 = reinterpret_cast<const uint16_t*>(&cur32)[i16];
+            if (!cur16) {
               continue;
             }
-            for (int8_t j = 0; j < 8; j++) {
-              if (!(cur8 & (1 << j))) {
-                continue;
+            if (__popcnt16(cur16) <= 4) {
+              for (int8_t i8 = 0; i8 < 2; i8++) {
+                const uint8_t cur8 = reinterpret_cast<const uint8_t*>(&cur16)[i8];
+                if (!cur8) {
+                  continue;
+                }
+                for (int8_t j = 0; j < 8; j++) {
+                  if (!(cur8 & (1 << j))) {
+                    continue;
+                  }
+                  const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4) + (i8 << 3) + j;
+                  mod.Modify(index, nullptr) = orig[index];
+                }
               }
-              const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4) + (i8 << 3) + j;
-              mod.Modify(index, nullptr) = orig[index];
+            }
+            else {
+              const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4);
+              Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], 16 * sizeof(T));
             }
           }
         }
       }
+      else {
+        const int64_t index = (i << 6);
+        Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], 64 * sizeof(T));
+      }
+      
     }
     mod.SetSize(orig.size());
   }
