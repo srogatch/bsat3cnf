@@ -29,15 +29,18 @@ struct ShadowProblem {
     _avlNodes.AssignZeros(CountUint64(orig._vrc._avlNp._nodes.size()));
   }
 
-  template<typename T> void RestoreArray(const FastVector<uint64_t>& dirty, const FastVector<T>& orig,
+  template<typename T> void RestoreArray(FastVector<uint64_t>& dirty, const FastVector<T>& orig,
     FastVector<T> &mod)
   {
+    //int64_t totBpc = 0; //DEBUG-PRINT
     for (int64_t i = 0; i < dirty.size(); i++) {
       const uint64_t cur64 = dirty[i];
       if (!cur64) {
         continue;
       }
-      if (_mm_popcnt_u64(cur64) <= 16) {
+      const int64_t bpc = _mm_popcnt_u64(cur64);
+      //totBpc += bpc; //DEBUG-PRINT
+      if (bpc <= 16) {
         //// Note: these are byte-order dependent (little endian)
         for (int8_t i32 = 0; i32 < 2; i32++) {
           const uint32_t cur32 = reinterpret_cast<const uint32_t*>(&cur64)[i32];
@@ -74,10 +77,11 @@ struct ShadowProblem {
       else {
         const int64_t index = (i << 6);
         Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], 64 * sizeof(T));
-      }
-      
+      }  
     }
     mod.SetSize(orig.size());
+    memset(&dirty.Modify(0, nullptr), 0, dirty.size() * sizeof(uint64_t));
+    //printf(" %lld ", totBpc); //DEBUG-PRINT
   }
 
   void Restore() {
@@ -87,6 +91,7 @@ struct ShadowProblem {
     RestoreArray(_vr3trees, _pOrig->_vr3._trees, _pMod->_vr3._trees);
     RestoreArray(_vr2trees, _pOrig->_vr2._trees, _pMod->_vr2._trees);
     RestoreArray(_avlNodes, _pOrig->_vrc._avlNp._nodes, _pMod->_vrc._avlNp._nodes);
+    //printf("\n"); // DEBUG-PRINT
 
     //// Restore scalars
     _pMod->_vrc._avlNp._iSpare = _pOrig->_vrc._avlNp._iSpare;
