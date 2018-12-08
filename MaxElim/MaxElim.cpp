@@ -171,6 +171,8 @@ void Worker() {
 
 int main()
 {
+  SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+
   int64_t nVars = -1, nClauses = -1;
   FastVector<Clause3> clauses;
   {

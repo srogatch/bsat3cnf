@@ -78,7 +78,7 @@ bool Problem::ApplyVar(const int64_t signedVar) {
   _varVal[absVar] = SignToBool(signedVar);
   _nKnown++;
 
-  std::vector<int64_t> toEss;
+  FastVector<int64_t> toEss;
   std::vector<int64_t> clauses = _vr3.Clauses(signedVar, *this);
   for (const int64_t i : clauses) {
     int8_t j = 0;
@@ -96,7 +96,8 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     RemoveClause3(i);
     for (int8_t k = 0; k < 3; k++) {
       if (k == j) continue;
-      toEss.emplace_back(cl._vars[k]);
+      toEss.emplace_back();
+      toEss.ModifyBack(nullptr) = cl._vars[k];
     }
   }
 
@@ -124,7 +125,6 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     RemoveClause3(i);
   }
 
-  std::vector<int64_t> toApply;
   clauses = _vr2.Clauses(signedVar, *this);
   for (const int64_t i : clauses) {
     int8_t j = 0;
@@ -140,10 +140,12 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     const int64_t signedOtherCl2 = _cl2[i]._vars[j ^ 1];
     RemoveClause2(i);
     // this clause just evaluates to true
-    toEss.emplace_back(signedOtherCl2);
+    toEss.emplace_back();
+    toEss.ModifyBack(nullptr) = signedOtherCl2;
   }
 
   clauses = _vr2.Clauses(-signedVar, *this);
+  FastVector<int64_t> toApply;
   for (const int64_t i : clauses) {
     int8_t j = 0;
     for (; j < 2; j++) {
@@ -157,15 +159,18 @@ bool Problem::ApplyVar(const int64_t signedVar) {
     //}
     const int64_t signedOtherCl2 = _cl2[i]._vars[j ^ 1];
     RemoveClause2(i);
-    toApply.emplace_back(signedOtherCl2);
+    toApply.emplace_back();
+    toApply.ModifyBack(nullptr) = signedOtherCl2;
   }
 
-  for (const int64_t var : toEss) {
+  for (int64_t i = 0; i < toEss.size(); i++) {
+    const int64_t var = toEss[i];
     if (!ActSingleSigned(var)) {
       return false;
     }
   }
-  for (const int64_t var : toApply) {
+  for (int64_t i = 0; i < toApply.size(); i++) {
+    const int64_t var = toApply[i];
     if (!ApplyVar(var)) {
       return false;
     }

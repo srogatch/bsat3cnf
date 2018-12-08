@@ -63,22 +63,34 @@ struct ShadowProblem {
                     continue;
                   }
                   const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4) + (i8 << 3) + j;
+                  if (index >= orig.size()) {
+                    goto depleted;
+                  }
                   mod.Modify(index, nullptr) = orig[index];
                 }
               }
             }
             else {
               const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4);
-              Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], 16 * sizeof(T));
+              if (index >= orig.size()) {
+                goto depleted;
+              }
+              const int64_t nItems = std::min<int64_t>(16, orig.size() - index);
+              Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], nItems * sizeof(T));
             }
           }
         }
       }
       else {
         const int64_t index = (i << 6);
-        Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], 64 * sizeof(T));
+        if (index >= orig.size()) {
+          goto depleted;
+        }
+        const int64_t nItems = std::min<int64_t>(64, orig.size() - index);
+        Helper::AlignedCopy(&mod.Modify(index, nullptr), &orig[index], nItems * sizeof(T));
       }  
     }
+  depleted:
     mod.SetSize(orig.size());
     memset(&dirty.Modify(0, nullptr), 0, dirty.size() * sizeof(uint64_t));
     //printf(" %lld ", totBpc); //DEBUG-PRINT

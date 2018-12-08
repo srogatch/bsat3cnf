@@ -4,9 +4,14 @@
 
 #include "targetver.h"
 
+#include <Windows.h>
+#undef min
+#undef max
+
 #include <immintrin.h>
 #include <intrin.h>
 
+#include <atomic>
 #include <cassert>
 #include <condition_variable>
 #include <cstdio>

@@ -1,15 +1,18 @@
 #pragma once
 
+#include "SpinLock.h"
+
 struct MemPool {
   static const int64_t _cPageSize = 1 << 12;
   static const int64_t _cMaxLenPages = 1 << 12;
   static const int64_t _cAlignment = 1 << 5;
 
 private:
+  typedef SpinSync<1 << 5> TSync;
   static MemPool _instance;
 
   void *_heads[_cMaxLenPages];
-  std::mutex _sync;
+  TSync _syncs[_cMaxLenPages];
 
 public:
   MemPool() {
@@ -28,10 +31,10 @@ public:
       return _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
     }
     
-    std::unique_lock<std::mutex> ml(_sync);
+    SyncLock<TSync> sl(_syncs[iSize]);
     void *ans = _heads[iSize];
     if (ans == nullptr) {
-      ml.unlock();
+      sl.EarlyRelease();
       return _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
     }
     _heads[iSize] = *reinterpret_cast<void**>(ans);
@@ -48,7 +51,7 @@ public:
       return;
     }
 
-    std::unique_lock<std::mutex> ml(_sync);
+    SyncLock<TSync> sl(_syncs[iSize]);
     *reinterpret_cast<void**>(pMem) = _heads[iSize];
     _heads[iSize] = pMem;
   }
