@@ -122,8 +122,11 @@ void Worker() {
         }
         left.RemoveClause3(i);
         if (left.ActSingleSigned(cur._cl3[i]._vars[j])) {
-          totCl3 += left._cl3.size();
-          maybeLeft = true;
+          Solver2Sat s2s(left);
+          if (s2s.HasSolution()) {
+            totCl3 += left._cl3.size();
+            maybeLeft = true;
+          }
         }
 
         shadowRight.Restore();
@@ -136,6 +139,10 @@ void Worker() {
               maybeSat = false;
               break;
             }
+          }
+          if (maybeSat) {
+            Solver2Sat s2s(right);
+            maybeSat = s2s.HasSolution();
           }
           if(maybeSat) {
             totCl3 += right._cl3.size();

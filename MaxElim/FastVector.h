@@ -82,17 +82,21 @@ public:
     return (*this)[_size - 1];
   }
 
-  void AssignZeros(const int64_t nItems) {
+  void AssignZeros(const int64_t nItems, const bool init=true) {
     const int64_t newSizeBytes = nItems * sizeof(T);
     if (newSizeBytes > _capBytes) {
-      const int64_t newCapBytes = MemPool::RoundUp((_capBytes + 1) + ((_capBytes + 1) >> 1));
+      // (_capBytes + 1) + ((_capBytes + 1) >> 1)
+      const int64_t newCapBytes = MemPool::RoundUp(newSizeBytes);
       MemPool::Instance().Release(_pItems, _capBytes);
       _pItems = reinterpret_cast<T*>(MemPool::Instance().Acquire(newCapBytes));
       _capBytes = newCapBytes;
     }
     _size = nItems;
-    memset(_pItems, 0, _size * sizeof(T));
+    if (init) {
+      memset(_pItems, 0, _size * sizeof(T));
+    }
   }
+  // Capacity must allow such a size already.
   void SetSize(const int64_t nItems) {
     _size = nItems;
   }

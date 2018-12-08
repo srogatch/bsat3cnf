@@ -4,13 +4,13 @@
 
 // Taken from https://www.geeksforgeeks.org/2-satisfiability-2-sat-problem/
 struct Solver2Sat {
-  std::vector<std::vector<int64_t>> _adj;
-  std::vector<std::vector<int64_t>> _adjInv;
+  FastVector<FastVector<int64_t>> _adj;
+  FastVector<FastVector<int64_t>> _adjInv;
   std::vector<bool> _visited;
   std::vector<bool> _visitedInv;
-  std::stack<int64_t> _st;
+  FastVector<int64_t> _st;
   // The strongly-connected component for this vertex.
-  std::vector<int64_t> _scc;
+  FastVector<int64_t> _scc;
   // The number of strongly-connected components
   int64_t _counter = 1;
   int64_t _N; // number of variables
@@ -18,12 +18,14 @@ struct Solver2Sat {
 
   // adds edges to form the original graph 
   void addEdges(const int64_t a, const int64_t b) {
-    _adj[a].push_back(b);
+    _adj.UnshadowedModify(a).emplace_back();
+    _adj.UnshadowedModify(a).UnshadowedModifyBack() = b;
   }
 
   // add edges to form the inverse graph 
   void addEdgesInverse(const int64_t a, const int64_t b) {
-    _adjInv[b].push_back(a);
+    _adjInv.UnshadowedModify(b).emplace_back();
+    _adjInv.UnshadowedModify(b).UnshadowedModifyBack() = a;
   }
 
   // for STEP 1 of Kosaraju's Algorithm 
@@ -36,7 +38,8 @@ struct Solver2Sat {
     for (int i = 0; i < _adj[u].size(); i++)
       dfsFirst(_adj[u][i]);
 
-    _st.push(u);
+    _st.emplace_back();
+    _st.UnshadowedModifyBack() = u;
   }
 
   // for STEP 2 of Kosaraju's Algorithm 
@@ -49,18 +52,22 @@ struct Solver2Sat {
     for (int i = 0; i < _adjInv[u].size(); i++)
       dfsSecond(_adjInv[u][i]);
 
-    _scc[u] = _counter;
+    _scc.UnshadowedModify(u) = _counter;
   }
 
   Solver2Sat(const Problem& prob) {
     _N = prob._varVal.size() - 1;
     _M = prob._cl2.size();
     const int64_t nVertBuf = 2 * _N + 1;
-    _adj.resize(nVertBuf);
-    _adjInv.resize(nVertBuf);
+    _adj.AssignZeros(nVertBuf, false);
+    _adjInv.AssignZeros(nVertBuf, false);
+    for (int64_t i = 0; i < nVertBuf; i++) {
+      new(&_adj.UnshadowedModify(i)) FastVector<int64_t>();
+      new(&_adjInv.UnshadowedModify(i)) FastVector<int64_t>();
+    }
     _visited.resize(nVertBuf);
     _visitedInv.resize(nVertBuf);
-    _scc.resize(nVertBuf);
+    _scc.AssignZeros(nVertBuf, false);
 
     // adding edges to the graph 
     for (int64_t i = 0; i < _M; i++) {
@@ -97,8 +104,15 @@ struct Solver2Sat {
       }
     }
   }
+  ~Solver2Sat() {
+    const int64_t nVertBuf = 2 * _N + 1;
+    for (int64_t i = 0; i < nVertBuf; i++) {
+      _adj.UnshadowedModify(i).~FastVector();
+      _adjInv.UnshadowedModify(i).~FastVector();
+    }
+  }
 
-  bool Solve(Problem& prob) {
+  bool HasSolution() {
     // STEP 1 of Kosaraju's Algorithm which 
     // traverses the original graph 
     for (int64_t i = 1; i <= 2 * _N; i++) {
@@ -110,9 +124,9 @@ struct Solver2Sat {
     // STEP 2 pf Kosaraju's Algorithm which 
     // traverses the inverse graph. After this, 
     // array scc[] stores the corresponding value 
-    while (!_st.empty()) {
-      const int64_t n = _st.top();
-      _st.pop();
+    while (_st.size() > 0) {
+      const int64_t n = _st.back();
+      _st.SetSize(_st.size() - 1);
 
       if (!_visitedInv[n]) {
         dfsSecond(n);
@@ -126,6 +140,13 @@ struct Solver2Sat {
       if (_scc[i] == _scc[i + _N]) {
         return false;
       }
+    }
+    return true;
+  }
+
+  bool Solve(Problem& prob) {
+    if (!HasSolution()) {
+      return false;
     }
     // Taken from https://cp-algorithms.com/graph/2SAT.html
     for (int64_t i = 1; i <= _N; i++) {
