@@ -38,14 +38,22 @@ public:
     }
     const int64_t iSize = (nBytes-1) / _cPageSize;
     if (iSize >= _cMaxLenPages) {
-      return _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
+      void *ans = _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
+      if (ans == nullptr) {
+        __debugbreak();
+      }
+      return ans;
     }
     
     //SyncLock<TSync> sl(_syncs[iSize]);
     void *ans = _heads[iSize];
     if (ans == nullptr) {
       //sl.EarlyRelease();
-      return _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
+      ans = _mm_malloc((iSize + 1)*_cPageSize, _cAlignment);
+      if (ans == nullptr) {
+        __debugbreak();
+      }
+      return ans;
     }
     _heads[iSize] = *reinterpret_cast<void**>(ans);
     return ans;
@@ -53,6 +61,9 @@ public:
 
   void Release(void *pMem, const int64_t nBytes) {
     if (pMem == nullptr) {
+      if (nBytes != 0) {
+        __debugbreak();
+      }
       return;
     }
     const int64_t iSize = (nBytes - 1) / _cPageSize;
@@ -65,5 +76,4 @@ public:
     *reinterpret_cast<void**>(pMem) = _heads[iSize];
     _heads[iSize] = pMem;
   }
-
 };

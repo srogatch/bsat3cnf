@@ -33,66 +33,68 @@ struct ShadowProblem {
     FastVector<T> &mod)
   {
     //int64_t totBpc = 0; //DEBUG-PRINT
-    for (int64_t i = 0; i < dirty.size(); i++) {
-      const uint64_t cur64 = dirty[i];
-      if (!cur64) {
-        continue;
-      }
-      const int64_t bpc = _mm_popcnt_u64(cur64);
-      //totBpc += bpc; //DEBUG-PRINT
-      if (bpc <= 16) {
-        //// Note: these are byte-order dependent (little endian)
-        for (int8_t i32 = 0; i32 < 2; i32++) {
-          const uint32_t cur32 = reinterpret_cast<const uint32_t*>(&cur64)[i32];
-          if (!cur32) {
-            continue;
-          }
-          for (int8_t i16 = 0; i16 < 2; i16++) {
-            const uint16_t cur16 = reinterpret_cast<const uint16_t*>(&cur32)[i16];
-            if (!cur16) {
+    mod.SetSize(orig.size());
+    if (dirty.size() > 0) {
+      for (int64_t i = 0; i < dirty.size(); i++) {
+        const uint64_t cur64 = dirty[i];
+        if (!cur64) {
+          continue;
+        }
+        const int64_t bpc = _mm_popcnt_u64(cur64);
+        //totBpc += bpc; //DEBUG-PRINT
+        if (bpc <= 16) {
+          //// Note: these are byte-order dependent (little endian)
+          for (int8_t i32 = 0; i32 < 2; i32++) {
+            const uint32_t cur32 = reinterpret_cast<const uint32_t*>(&cur64)[i32];
+            if (!cur32) {
               continue;
             }
-            if (__popcnt16(cur16) <= 4) {
-              for (int8_t i8 = 0; i8 < 2; i8++) {
-                const uint8_t cur8 = reinterpret_cast<const uint8_t*>(&cur16)[i8];
-                if (!cur8) {
-                  continue;
-                }
-                for (int8_t j = 0; j < 8; j++) {
-                  if (!(cur8 & (1 << j))) {
+            for (int8_t i16 = 0; i16 < 2; i16++) {
+              const uint16_t cur16 = reinterpret_cast<const uint16_t*>(&cur32)[i16];
+              if (!cur16) {
+                continue;
+              }
+              if (__popcnt16(cur16) <= 4) {
+                for (int8_t i8 = 0; i8 < 2; i8++) {
+                  const uint8_t cur8 = reinterpret_cast<const uint8_t*>(&cur16)[i8];
+                  if (!cur8) {
                     continue;
                   }
-                  const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4) + (i8 << 3) + j;
-                  if (index >= orig.size()) {
-                    goto depleted;
+                  for (int8_t j = 0; j < 8; j++) {
+                    if (!(cur8 & (1 << j))) {
+                      continue;
+                    }
+                    const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4) + (i8 << 3) + j;
+                    if (index >= orig.size()) {
+                      goto depleted; // no break level in C/C++
+                    }
+                    mod.UnshadowedModify(index) = orig[index];
                   }
-                  mod.UnshadowedModify(index) = orig[index];
                 }
               }
-            }
-            else {
-              const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4);
-              if (index >= orig.size()) {
-                goto depleted;
+              else {
+                const int64_t index = (i << 6) + (i32 << 5) + (i16 << 4);
+                if (index >= orig.size()) {
+                  goto depleted; // no break level in C/C++
+                }
+                const int64_t nItems = std::min<int64_t>(16, orig.size() - index);
+                Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
               }
-              const int64_t nItems = std::min<int64_t>(16, orig.size() - index);
-              Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
             }
           }
         }
-      }
-      else {
-        const int64_t index = (i << 6);
-        if (index >= orig.size()) {
-          goto depleted;
+        else {
+          const int64_t index = (i << 6);
+          if (index >= orig.size()) {
+            goto depleted; // no break level in C/C++
+          }
+          const int64_t nItems = std::min<int64_t>(64, orig.size() - index);
+          Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
         }
-        const int64_t nItems = std::min<int64_t>(64, orig.size() - index);
-        Helper::AlignedCopy(&mod.UnshadowedModify(index), &orig[index], nItems * sizeof(T));
-      }  
+      }
+    depleted:
+      memset(&dirty.UnshadowedModify(0), 0, dirty.size() * sizeof(uint64_t));
     }
-  depleted:
-    mod.SetSize(orig.size());
-    memset(&dirty.UnshadowedModify(0), 0, dirty.size() * sizeof(uint64_t));
     //printf(" %lld ", totBpc); //DEBUG-PRINT
   }
 

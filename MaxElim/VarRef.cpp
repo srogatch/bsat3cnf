@@ -184,8 +184,8 @@ template<int8_t taClauseSz> int64_t VarRef<taClauseSz>::deleteNode(int64_t root,
 
   if (root < 0) {
     fprintf(stderr, "Cannot find to delete variable %lld in clause %lld.\n", _var, key);
-    quick_exit(8);
-    //return root; // we would return this if it wouldn't be an error
+    __debugbreak();
+    return root; // we would return this if it wouldn't be an error
   }
 
   // If the key to be deleted is smaller than the 

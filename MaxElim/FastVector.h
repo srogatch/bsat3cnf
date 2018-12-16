@@ -73,10 +73,19 @@ public:
   }
 
   void pop_back() {
+    if (_size <= 0) {
+      __debugbreak();
+    }
     _size--;
   }
 
-  const T& operator[](const int64_t at) const { return _pItems[at]; }
+  const T& operator[](const int64_t at) const { 
+    if (at < 0 || at >= _size) {
+      fprintf(stderr, "Out of range %lld while size %lld.\n", at, _size);
+      __debugbreak();
+    }
+    return _pItems[at];
+  }
 
   const T& back() const {
     return (*this)[_size - 1];
@@ -98,6 +107,9 @@ public:
   }
   // Capacity must allow such a size already.
   void SetSize(const int64_t nItems) {
+    if (nItems < 0 || nItems * int64_t(sizeof(T)) > _capBytes) {
+      __debugbreak();
+    }
     _size = nItems;
   }
 
@@ -115,6 +127,10 @@ public:
   }
 
   T& UnshadowedModify(const int64_t at) {
+    if (at < 0 || at >= _size) {
+      fprintf(stderr, "Out of range %lld while size %lld.\n", at, _size);
+      __debugbreak();
+    }
     return _pItems[at];
   }
   T& UnshadowedModifyBack() {

@@ -178,7 +178,7 @@ void Worker() {
 
 int main()
 {
-  SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS);
+  SetPriorityClass(GetCurrentProcess(), BELOW_NORMAL_PRIORITY_CLASS);
 
   int64_t nVars = -1, nClauses = -1;
   FastVector<Clause3> clauses;
@@ -224,13 +224,27 @@ int main()
             fprintf(stderr, "Too many variables in a clause: %lld", int64_t(curClause.size()));
             return 4;
           }
-          clauses.emplace_back();
+          set<int64_t> unique(curClause.begin(), curClause.end());
+          curClause = vector(unique.begin(), unique.end());
+          bool useClause = true;
           for (int8_t i = 0; i < int8_t(curClause.size()); i++) {
-            clauses.UnshadowedModifyBack()._vars[i] = curClause[i];
-            usedVar[abs(curClause[i])] = true;
+            for (int8_t j = 0; j < i; j++) {
+              if (curClause[i] == -curClause[j]) {
+                useClause = false;
+                goto useClauseDetermined; // no break level in C/C++
+              }
+            }
           }
-          for (int8_t i = int8_t(curClause.size()); i < 3; i++) {
-            clauses.UnshadowedModifyBack()._vars[i] = 0;
+        useClauseDetermined:
+          if (useClause) {
+            clauses.emplace_back();
+            for (int8_t i = 0; i < int8_t(curClause.size()); i++) {
+              clauses.UnshadowedModifyBack()._vars[i] = curClause[i];
+              usedVar[abs(curClause[i])] = true;
+            }
+            for (int8_t i = int8_t(curClause.size()); i < 3; i++) {
+              clauses.UnshadowedModifyBack()._vars[i] = 0;
+            }
           }
           curClause.clear();
           break;
